@@ -161,8 +161,8 @@ int main(int argc, char *argv[])
     }
     clock_gettime(CLOCK_REALTIME, &finish);
     ntime = finish.tv_nsec - start.tv_nsec;
-    stime = (int)finish.tv_sec - (int)start.tv_sec;
-    printf("main(): Created %ld threads. Time %ld, nsec %ld\n", n_threads, stime, ntime);
+    stime = (int)(finish.tv_sec - start.tv_sec);
+    printf("main(): Created %d threads. Time %d, nsec %ld\n", n_threads, stime, ntime);
 
     /** Free matrixes **/
     for(int i=0; i<n; i++){
