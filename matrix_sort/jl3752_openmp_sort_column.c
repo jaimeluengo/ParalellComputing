@@ -12,22 +12,44 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <time.h>
-void swap(int row_i, int row_j, int n_cols, int n, double *mat[n]);
 
-void print_mat(int n, double *mat[n])
+void single_thread_sort_column(int m, int n, int *mat[n]);
+void single_thread_sort_block(int m, int n, int *mat[n]);
+
+
+
+void swap_rows(int row_i, int row_j, int n_cols, int n, int *mat[n]){
+    for(int i=0; i<n_cols; i++){
+        int temp = mat[row_i][i];
+        mat[row_i][i] = mat[row_j][i];
+        mat[row_j][i] = temp;
+    }
+}
+
+
+void swap_cols(int col_i, int col_j, int n_rows, int *mat[n_rows]){
+    for(int i=0; i<n_rows; i++){
+        int temp = mat[i][col_i];
+        mat[i][col_i] = mat[i][col_j];
+        mat[i][col_j] = temp;
+    }
+}
+
+void print_mat(int n, int *mat[n])
 {
+    printf("\n");
     for (int i = 0; i < n; i++)
     {
         for (int j = 0; j < n; j++)
         {
-            printf("%f ", mat[i][j]);
+            printf("%d ", mat[i][j]);
         }
         printf("\n");
     }
 }
 
 
-void single_thread_sort(int m, int n, double *mat[n]){
+void single_thread_sort_column(int m, int n, int *mat[n]){
     int maxRow = n<=m ? n : m;
     for(int i=0; i<maxRow; i++){
         int argmax = i, max = mat[i][i];
@@ -37,82 +59,63 @@ void single_thread_sort(int m, int n, double *mat[n]){
                 argmax = j;
             }
         }
-       swap(argmax, i, m, n, mat); 
+       swap_rows(argmax, i, m, n, mat); 
     }
 
 }
 
-void swap(int row_i, int row_j, int n_cols, int n, double *mat[n]){
-    for(int i=0; i<n_cols; i++){
-        int temp = mat[row_i][i];
-        mat[row_i][i] = mat[row_j][i];
-        mat[row_j][i] = temp;
-	printf("[%d, %d] \n", mat[row_i][i], mat[row_j][i]);
+void single_thread_sort_block(int m, int n, int *mat[n]){
+    int maxRow = n<=m ? n : m;
+    for(int i=0; i<maxRow; i++){
+        int colmax = i, rowmax = i, max = mat[i][i];
+        for(int k = i; k<m; k++){
+            for(int j=i; j<n; j++){
+                if(max < mat[j][k]){
+                    max = mat[j][k];
+                    colmax = k;
+                    rowmax = j;
+                }
+            }
+        }
+       swap_rows(rowmax, i, m, n, mat); 
+       swap_cols(colmax, i, n, mat); 
     }
 }
 
 
-void openmp_sort(double *mat[], int m, int n){
-//  int curr_locations[n]; // holds rows locations of the matrix at each stage in the sorting
-//     for(int i=0; i< n; i++){
-//         curr_locations[i]=i;
-//     }
-//     //find new locations of rows
-//     int num_row_blocks = m%n_threads == 0 ? m/n_threads : m/n_threads +1;
-//     //If not square matrix just sort until minimum between number of rows and cols
-//     int num_col_blocks = n%n_threads == 0 ? n/n_threads : n/n_threads +1;
-//     //Take the minimum of both
-//     int num_blocks = num_row_blocks<num_col_blocks ? num_row_blocks : num_col_blocks;
-//     for(int i=0; i<num_blocks; i++){
-//         int start_block = i*n_threads;
-//         #pragma omp parallel {
-//             int thread_ID = omp_get_thread_num();
-//             max_heaps[thread_ID] = HeapInit(thread_ID+1); //allow one more element in the heap
-//         }
 
-//         /** Fill up heaps with maximum elements */   
-//         #pragma omp parallel {
-//             /* Obtain and print thread id */
-//             int thread_ID = omp_get_thread_num();
-//             // printf("Hello World from thread = %d\n", tid);
-//             int start_line = start_block+tid;
-//             //fill up the heap
-//             for(j=start_line; j<start_line+tid j<n && start_line<m; j++){
-//                 insert_heap(max_heaps[thread_ID], A[curr_locations[j]][start_line]);
-//             }
-//             //finish traversing the column
-//             for(j=start_line+tid; j<n && start_line<m; j++){
-//                 insert_heap(max_heaps[thread_ID], A[curr_locations[j]][start_line]);
-//                 delete_max_heap(max_heaps[thread_ID]);
-//             }
-//             /* All threads join master thread and terminate */
-//         }
-
-//         /** Do the swapping */   
-//         #pragma omp parallel {
-//             /* Obtain and print thread id */
-//             int thread_ID = omp_get_thread_num();
-//             // printf("Hello World from thread = %d\n", tid);
-//             int start_line = start_block+tid;
-//             //fill up the heap
-//             for(j=start_line; j<start_line+tid j<n && start_line<m; j++){
-//                 insert_heap(max_heaps[thread_ID], A[curr_locations[j]][start_line]);
-//             }
-//             //finish traversing the column
-//             for(j=start_line+tid; j<n && start_line<m; j++){
-//                 insert_heap(max_heaps[thread_ID], A[curr_locations[j]][start_line]);
-//                 delete_max_heap(max_heaps[thread_ID]);
-//             }
-//             /* All threads join master thread and terminate */
-//         }
-
-//         #pragma omp parallel {
-//             int thread_ID = omp_get_thread_num();
-//             free(max_heaps[thread_ID]);
-//         }
-//     }
+void openmp_sort_colum(int m, int n, int *mat[n]){
+ int curr_locations[n]; // holds rows locations of the matrix at each stage in the sorting
+    for(int i=0; i< n; i++){
+        curr_locations[i]=i;
+    }
+    int maxRow = n<=m ? n : m;
+    for(int i=0; i<maxRow; i++){
+        int argmax = i, max = mat[i][i];
+        #pragma omp parallel shared(argmax, max) num_threads(4){
+            #pragma omp for schedule(static,1)
+            for(int j=i+1; j<n; j++){
+                if(max < mat[j][i]){
+                    max = mat[j][i];
+                    argmax = j;
+                }
+            }
+        }
+        swap_rows(argmax, i, m, n, mat); 
+     }
 }
 
+void compare(int *A[], int *B[], int m, int n){
+    for(int i=0; i<m; i++){
+        for(int j=0; j<n; j++){
+            if(A[i][j] != B[i][j]){
+                printf("They are different!\n");
+                return;
+            }
+        }
+    }
+    printf("They are the same!\n");
+}
 
 int main(int argc, char *argv[])
 {
@@ -129,26 +132,29 @@ int main(int argc, char *argv[])
     n_threads = atoi(argv[3]); //read from command line
 
     void *status;
-    double *A[n];
+    int *A[n], *B[n];
 
     /** Intialize matrixes **/
 
-    srand48(2); //last digit of my netid is 2
+    srand(2); //last digit of my netid is 2
 
     for (int i = 0; i < n; i++)
     {
-        A[i] = (double *)malloc(m * sizeof(double));
+        A[i] = (int *)malloc(m * sizeof(int));
+        B[i] = (int *)malloc(m * sizeof(int));
         for (int j = 0; j < m; j++)
         {
-            A[i][j] = drand48();
+            A[i][j] = rand();
+            B[i][j] = A[i][j];
         }
     }
-    print_mat(n, A);
+    // print_mat(n, A);
     clock_gettime(CLOCK_REALTIME, &start);
-
-    single_thread_sort(A, m, n);
+    single_thread_sort_column(m, n, A);
+    openmp_sort_colum(m,n,B);
+    compare(A,B,m,n);
     clock_gettime(CLOCK_REALTIME, &finish);
-    print_mat(n, A);
+    // print_mat(n, A);
     ntime = finish.tv_nsec - start.tv_nsec;
     stime = (int)(finish.tv_sec - start.tv_sec);
     printf("main(): Created %d threads. Time %d, nsec %ld\n", n_threads, stime, ntime);
@@ -157,5 +163,6 @@ int main(int argc, char *argv[])
     for (int i = 0; i < n; i++)
     {
         free(A[i]);
+        free(B[i]);
     }
 }
