@@ -112,27 +112,28 @@ void single_thread_sort_block(int m, int n, int *mat[n]){
 
 
 void openmp_sort_colum(int n_threads, int m, int n, int *mat[n]){
- int curr_locations[n]; // holds rows locations of the matrix at each stage in the sorting
-    for(int i=0; i< n; i++){
-        curr_locations[i]=i;
-    }
     int maxRow = n<=m ? n : m;
     for(int i=0; i<maxRow; i++){
-        int argmax = i, max = mat[i][i];
+        int argmax_all = i, max_total = mat[i][i];
 
-        #pragma omp parallel shared(argmax, max) num_threads(n_threads)
+        #pragma omp parallel shared(argmax_all, max_total) num_threads(n_threads)
         {
-            #pragma omp for schedule(static,1)
+			int argmax_local = i, max_local = -1;
+            #pragma omp for schedule(static,1) nowait
             for(int j=i+1;j<n; j++){
-                #pragma omp critical
-                if(max < mat[j][i]){
-                    max = mat[j][i];
-                    argmax = j;
+                if(max_local < mat[j][i]){
+                    max_local = mat[j][i];
+                    argmax_local = j;
                 }
             }
+            #pragma omp critical
+            if(max_total < max_local){
+				max_total = max_local;
+				argmax_all = argmax_local;
+			}
         }
-        swap_rows(argmax, i, m, n, mat); 
-
+        //Just swap if the max row is not the current one
+        if(i!= argmax_all) swap_rows_open_mp(n_threads, argmax_all, i, m, n, mat); 
      }
 }
 
@@ -141,9 +142,9 @@ void omp_sort_block(int n_threads, int m, int n, int *mat[n]){
     int maxRow = n<=m ? n : m;
     for(int i=0; i<maxRow; i++){
         int colmax = i, rowmax = i, max = mat[i][i];
-        #pragma omp parallel shared(colmax, rowmax, max, mat) num_threads(n_threads)
+        #pragma omp parallel shared(colmax, rowmax, max) num_threads(n_threads)
         {
-			#pragma omp for schedule(static,n_threads) collapse(2)
+			#pragma omp for schedule(static,n_threads) collapse(2) nowait
 			for(int k = i; k<m; k++){
 				for(int j=i; j<n; j++){
                     #pragma omp critical
@@ -155,17 +156,17 @@ void omp_sort_block(int n_threads, int m, int n, int *mat[n]){
 				}
 			}
 		}
-       //swap_rows_open_mp(n_threads, rowmax, i, m, n, mat); 
-       swap_rows(rowmax, i, m, n, mat); 
-       //swap_cols_open_mp(n_threads, colmax, i, n, mat); 
-       swap_cols(colmax, i, n, mat); 
+       swap_rows_open_mp(n_threads, rowmax, i, m, n, mat); 
+       //swap_rows(rowmax, i, m, n, mat); 
+       swap_cols_open_mp(n_threads, colmax, i, n, mat); 
+       //swap_cols(colmax, i, n, mat); 
     }
 }
 
 
 void compare(int *A[], int *B[], int m, int n){
     for(int i=0; i<m; i++){
-        for(int j=0; j<n; j++){
+        for(int j=0; j<n; j++){ 
             if(A[i][j] != B[i][j]){
                 printf("They are different!\n");
                 return;
@@ -182,7 +183,7 @@ int main(int argc, char *argv[])
         printf("Not enough input arguments.\n");
         return -1;
     }
-    struct timespec start, finish;
+    struct timespec start_single, start_omp, finish_single, finish_omp;
     int rc, ntime, stime;
     int m, n, n_threads;
     n = atoi(argv[1]); //read from command line
@@ -208,17 +209,27 @@ int main(int argc, char *argv[])
     }
     //print_mat(n, B);
     //print_mat(n, A);
-    clock_gettime(CLOCK_REALTIME, &start);
-    single_thread_sort_block(m, n, A);
-    printf("\n");
-    omp_sort_block(n_threads, m,n,B);
+    clock_gettime(CLOCK_REALTIME, &start_single);
+    single_thread_sort_column(m, n, A);
+    clock_gettime(CLOCK_REALTIME, &finish_single);
+    clock_gettime(CLOCK_REALTIME, &start_omp);
+    openmp_sort_colum(n_threads, m,n,B);
+    clock_gettime(CLOCK_REALTIME, &finish_omp);
+    //Check if they are the same
     compare(A,B,m,n);
-    clock_gettime(CLOCK_REALTIME, &finish);
+
     //print_mat(n, B);
     //print_mat(n, A);
-    ntime = finish.tv_nsec - start.tv_nsec;
-    stime = (int)(finish.tv_sec - start.tv_sec);
-    printf("main(): Created %d threads. Time %d, nsec %ld\n", n_threads, stime, ntime);
+    
+    //print single threaded time
+    ntime = finish_single.tv_nsec - start_single.tv_nsec;
+    stime = (int)(finish_single.tv_sec - start_single.tv_sec);
+    printf("Single threaded: Time %d, nsec %ld\n", n_threads, stime, ntime);
+
+	//print omp time
+    ntime = finish_omp.tv_nsec - start_omp.tv_nsec;
+    stime = (int)(finish_omp.tv_sec - start_omp.tv_sec);
+    printf("Multi threaded: Created %d threads. Time %d, nsec %ld\n", n_threads, stime, ntime);
 
     /** Free matrixes **/
     for (int i = 0; i < n; i++)
