@@ -124,6 +124,7 @@ void openmp_sort_colum(int n_threads, int m, int n, int *mat[n]){
         {
             #pragma omp for schedule(static,1)
             for(int j=i+1;j<n; j++){
+                #pragma omp critical
                 if(max < mat[j][i]){
                     max = mat[j][i];
                     argmax = j;
@@ -140,11 +141,12 @@ void omp_sort_block(int n_threads, int m, int n, int *mat[n]){
     int maxRow = n<=m ? n : m;
     for(int i=0; i<maxRow; i++){
         int colmax = i, rowmax = i, max = mat[i][i];
-        #pragma omp parallel shared(colmax, rowmax, max) num_threads(n_threads)
+        #pragma omp parallel shared(colmax, rowmax, max, mat) num_threads(n_threads)
         {
 			#pragma omp for schedule(static,n_threads) collapse(2)
 			for(int k = i; k<m; k++){
 				for(int j=i; j<n; j++){
+                    #pragma omp critical
 					if(max < mat[j][k]){
 						max = mat[j][k];
 						colmax = k;
