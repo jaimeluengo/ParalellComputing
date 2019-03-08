@@ -26,6 +26,17 @@ void swap_rows(int row_i, int row_j, int n_cols, int n, int *mat[n]){
     }
 }
 
+void swap_rows_open_mp(int n_threads, int row_i, int row_j, int n_cols, int n, int *mat[n]){
+     #pragma omp parallel num_threads(n_threads)
+     {
+        #pragma omp for schedule(static,1)
+		for(int i=0; i<n_cols; i++){
+			int temp = mat[row_i][i];
+			mat[row_i][i] = mat[row_j][i];
+			mat[row_j][i] = temp;
+		}
+	}
+}
 
 void swap_cols(int col_i, int col_j, int n_rows, int *mat[n_rows]){
     for(int i=0; i<n_rows; i++){
@@ -59,7 +70,6 @@ void single_thread_sort_column(int m, int n, int *mat[n]){
                 argmax = j;
             }
         }
-        printf("max row :%d \n", argmax);
        swap_rows(argmax, i, m, n, mat); 
     }
 
@@ -103,7 +113,6 @@ void openmp_sort_colum(int n_threads, int m, int n, int *mat[n]){
                     argmax = j;
                 }
             }
-            printf("max row  within:%d \n", argmax);
         }
         swap_rows(argmax, i, m, n, mat); 
 
@@ -153,15 +162,16 @@ int main(int argc, char *argv[])
             B[i][j] = A[i][j];
         }
     }
-    print_mat(n, B);
+    //print_mat(n, B);
+    //print_mat(n, A);
     clock_gettime(CLOCK_REALTIME, &start);
     single_thread_sort_column(m, n, A);
     printf("\n");
     openmp_sort_colum(n_threads, m,n,B);
     compare(A,B,m,n);
     clock_gettime(CLOCK_REALTIME, &finish);
-    print_mat(n, B);
-    print_mat(n, A);
+    //print_mat(n, B);
+    //print_mat(n, A);
     ntime = finish.tv_nsec - start.tv_nsec;
     stime = (int)(finish.tv_sec - start.tv_sec);
     printf("main(): Created %d threads. Time %d, nsec %ld\n", n_threads, stime, ntime);
