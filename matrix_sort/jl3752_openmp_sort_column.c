@@ -11,7 +11,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
-
+#include <time.h>
+void swap(int row_i, int row_j, int n_cols, int n, double *mat[n]);
 
 void print_mat(int n, double *mat[n])
 {
@@ -26,11 +27,7 @@ void print_mat(int n, double *mat[n])
 }
 
 
-void single_thread_sort(double *mat[], int m, int n){
- int curr_locations[n]; // holds rows locations of the matrix at each stage in the sorting
-    for(int i=0; i< n; i++){
-        curr_locations[i]=i;
-    }
+void single_thread_sort(int m, int n, double *mat[n]){
     int maxRow = n<=m ? n : m;
     for(int i=0; i<maxRow; i++){
         int argmax = i, max = mat[i][i];
@@ -40,16 +37,17 @@ void single_thread_sort(double *mat[], int m, int n){
                 argmax = j;
             }
         }
-       swap(mat, argmax, i, m); 
+       swap(argmax, i, m, n, mat); 
     }
 
 }
 
-void swap(double *mat[], int row_i, int row_j, int n_cols){
+void swap(int row_i, int row_j, int n_cols, int n, double *mat[n]){
     for(int i=0; i<n_cols; i++){
         int temp = mat[row_i][i];
         mat[row_i][i] = mat[row_j][i];
         mat[row_j][i] = temp;
+	printf("[%d, %d] \n", mat[row_i][i], mat[row_j][i]);
     }
 }
 
@@ -145,11 +143,12 @@ int main(int argc, char *argv[])
             A[i][j] = drand48();
         }
     }
-
+    print_mat(n, A);
     clock_gettime(CLOCK_REALTIME, &start);
 
     single_thread_sort(A, m, n);
     clock_gettime(CLOCK_REALTIME, &finish);
+    print_mat(n, A);
     ntime = finish.tv_nsec - start.tv_nsec;
     stime = (int)(finish.tv_sec - start.tv_sec);
     printf("main(): Created %d threads. Time %d, nsec %ld\n", n_threads, stime, ntime);
@@ -158,9 +157,5 @@ int main(int argc, char *argv[])
     for (int i = 0; i < n; i++)
     {
         free(A[i]);
-        free(B[i]);
-        free(C[i]);
     }
-
-    pthread_exit(NULL);
 }
