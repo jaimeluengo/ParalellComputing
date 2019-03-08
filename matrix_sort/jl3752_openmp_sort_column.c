@@ -59,6 +59,7 @@ void single_thread_sort_column(int m, int n, int *mat[n]){
                 argmax = j;
             }
         }
+        printf("max row :%d \n", argmax);
        swap_rows(argmax, i, m, n, mat); 
     }
 
@@ -84,7 +85,7 @@ void single_thread_sort_block(int m, int n, int *mat[n]){
 
 
 
-void openmp_sort_colum(int m, int n, int *mat[n]){
+void openmp_sort_colum(int n_threads, int m, int n, int *mat[n]){
  int curr_locations[n]; // holds rows locations of the matrix at each stage in the sorting
     for(int i=0; i< n; i++){
         curr_locations[i]=i;
@@ -92,16 +93,20 @@ void openmp_sort_colum(int m, int n, int *mat[n]){
     int maxRow = n<=m ? n : m;
     for(int i=0; i<maxRow; i++){
         int argmax = i, max = mat[i][i];
-        #pragma omp parallel shared(argmax, max) num_threads(4){
+
+        #pragma omp parallel shared(argmax, max) num_threads(n_threads)
+        {
             #pragma omp for schedule(static,1)
-            for(int j=i+1; j<n; j++){
+            for(int j=i+1;j<n; j++){
                 if(max < mat[j][i]){
                     max = mat[j][i];
                     argmax = j;
                 }
             }
+            printf("max row  within:%d \n", argmax);
         }
         swap_rows(argmax, i, m, n, mat); 
+
      }
 }
 
@@ -148,13 +153,15 @@ int main(int argc, char *argv[])
             B[i][j] = A[i][j];
         }
     }
-    // print_mat(n, A);
+    print_mat(n, B);
     clock_gettime(CLOCK_REALTIME, &start);
     single_thread_sort_column(m, n, A);
-    openmp_sort_colum(m,n,B);
+    printf("\n");
+    openmp_sort_colum(n_threads, m,n,B);
     compare(A,B,m,n);
     clock_gettime(CLOCK_REALTIME, &finish);
-    // print_mat(n, A);
+    print_mat(n, B);
+    print_mat(n, A);
     ntime = finish.tv_nsec - start.tv_nsec;
     stime = (int)(finish.tv_sec - start.tv_sec);
     printf("main(): Created %d threads. Time %d, nsec %ld\n", n_threads, stime, ntime);
