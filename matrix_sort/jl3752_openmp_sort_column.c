@@ -33,7 +33,7 @@ void swap_rows_open_mp(int n_threads, int row_i, int row_j, int n_cols, int n, i
 
      #pragma omp parallel num_threads(n_threads)
      {
-        #pragma omp for schedule(static,1)
+        #pragma omp for schedule(static)
 		for(int i=0; i<n_cols; i++){
 			int temp = mat[row_i][i];
 			mat[row_i][i] = mat[row_j][i];
@@ -78,11 +78,11 @@ void openmp_sort_colum(int n_threads, int m, int n, int *mat[n]){
     int maxRow = n<=m ? n : m;
     for(int i=0; i<maxRow; i++){
         int argmax_all = i, max_total = mat[i][i];
-
-        #pragma omp parallel shared(argmax_all, max_total) num_threads(n_threads)
+		
+        #pragma omp parallel shared(argmax_all, max_total)  num_threads(n_threads)
         {
 			int argmax_local = i, max_local = -1;
-            #pragma omp for schedule(static,1) nowait
+            #pragma omp for schedule(static) nowait
             for(int j=i+1;j<n; j++){
                 if(max_local < mat[j][i]){
                     max_local = mat[j][i];
@@ -94,6 +94,7 @@ void openmp_sort_colum(int n_threads, int m, int n, int *mat[n]){
 				max_total = max_local;
 				argmax_all = argmax_local;
 			}
+			
         }
         //Just swap if the max row is not the current one
         if(i!= argmax_all) swap_rows_open_mp(n_threads, argmax_all, i, m, n, mat); 
@@ -147,17 +148,18 @@ int main(int argc, char *argv[])
         }
     }
 
-    //clock_gettime(CLOCK_REALTIME, &start_single);
+    //clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start_single);
     //single_thread_sort_column(m, n, A);
-    //clock_gettime(CLOCK_REALTIME, &finish_single);
+    //clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &finish_single);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID,  &start_omp);
     openmp_sort_colum(n_threads, m,n,B);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &finish_omp);
     //Check if they are the same
     //compare(A,B,m,n);
-
-
      uint64_t diff; 
+    //printf("%d\n",n_threads);
+	//diff = (BILLION * (finish_single.tv_sec - start_single.tv_sec) + finish_single.tv_nsec - start_single.tv_nsec)/MILLION;
+	//printf("%llu\n", (long long unsigned int) diff);
 	diff = (BILLION * (finish_omp.tv_sec - start_omp.tv_sec) + finish_omp.tv_nsec - start_omp.tv_nsec)/MILLION;
 	printf("%llu\n", (long long unsigned int) diff);
     //print single threaded time
