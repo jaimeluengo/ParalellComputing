@@ -27,36 +27,14 @@ void swap_rows(int row_i, int row_j, int n_cols, int n, int *mat[n]){
 }
 
 void swap_rows_open_mp(int n_threads, int row_i, int row_j, int n_cols, int n, int *mat[n]){
-     int temp = 0;
-     #pragma omp parallel private(temp) num_threads(n_threads)
+
+     #pragma omp parallel num_threads(n_threads)
      {
         #pragma omp for schedule(static,1)
 		for(int i=0; i<n_cols; i++){
 			int temp = mat[row_i][i];
 			mat[row_i][i] = mat[row_j][i];
 			mat[row_j][i] = temp;
-		}
-	}
-}
-
-void swap_cols(int col_i, int col_j, int n_rows, int *mat[n_rows]){
-    for(int i=0; i<n_rows; i++){
-        int temp = mat[i][col_i];
-        mat[i][col_i] = mat[i][col_j];
-        mat[i][col_j] = temp;
-    }
-}
-
-
-void swap_cols_open_mp(int n_threads, int col_i, int col_j, int n_rows, int *mat[n_rows]){
-    int temp = 0;
-    #pragma omp parallel private(temp) num_threads(n_threads)
-    {
-		#pragma omp for schedule(static,1)
-		for(int i=0; i<n_rows; i++){
-			temp = mat[i][col_i];
-			mat[i][col_i] = mat[i][col_j];
-			mat[i][col_j] = temp;
 		}
 	}
 }
@@ -91,24 +69,6 @@ void single_thread_sort_column(int m, int n, int *mat[n]){
 
 }
 
-void single_thread_sort_block(int m, int n, int *mat[n]){
-    int maxRow = n<=m ? n : m;
-    for(int i=0; i<maxRow; i++){
-        int colmax = i, rowmax = i, max = mat[i][i];
-        for(int k = i; k<m; k++){
-            for(int j=i; j<n; j++){
-                if(max < mat[j][k]){
-                    max = mat[j][k];
-                    colmax = k;
-                    rowmax = j;
-                }
-            }
-        }
-       swap_rows(rowmax, i, m, n, mat); 
-       swap_cols(colmax, i, n, mat); 
-    }
-}
-
 
 
 void openmp_sort_colum(int n_threads, int m, int n, int *mat[n]){
@@ -138,31 +98,6 @@ void openmp_sort_colum(int n_threads, int m, int n, int *mat[n]){
 }
 
 
-void omp_sort_block(int n_threads, int m, int n, int *mat[n]){
-    int maxRow = n<=m ? n : m;
-    for(int i=0; i<maxRow; i++){
-        int colmax = i, rowmax = i, max = mat[i][i];
-        #pragma omp parallel shared(colmax, rowmax, max) num_threads(n_threads)
-        {
-			#pragma omp for schedule(static,n_threads) collapse(2) nowait
-			for(int k = i; k<m; k++){
-				for(int j=i; j<n; j++){
-                    #pragma omp critical
-					if(max < mat[j][k]){
-						max = mat[j][k];
-						colmax = k;
-						rowmax = j;
-					}
-				}
-			}
-		}
-       swap_rows_open_mp(n_threads, rowmax, i, m, n, mat); 
-       //swap_rows(rowmax, i, m, n, mat); 
-       swap_cols_open_mp(n_threads, colmax, i, n, mat); 
-       //swap_cols(colmax, i, n, mat); 
-    }
-}
-
 
 void compare(int *A[], int *B[], int m, int n){
     for(int i=0; i<m; i++){
@@ -173,7 +108,7 @@ void compare(int *A[], int *B[], int m, int n){
             }
         }
     }
-    printf("They are the same!\n");
+    //printf("They are the same!\n");
 }
 
 int main(int argc, char *argv[])
@@ -207,8 +142,7 @@ int main(int argc, char *argv[])
             B[i][j] = A[i][j];
         }
     }
-    //print_mat(n, B);
-    //print_mat(n, A);
+
     clock_gettime(CLOCK_REALTIME, &start_single);
     single_thread_sort_column(m, n, A);
     clock_gettime(CLOCK_REALTIME, &finish_single);
@@ -218,18 +152,17 @@ int main(int argc, char *argv[])
     //Check if they are the same
     compare(A,B,m,n);
 
-    //print_mat(n, B);
-    //print_mat(n, A);
+
     
     //print single threaded time
     ntime = finish_single.tv_nsec - start_single.tv_nsec;
     stime = (int)(finish_single.tv_sec - start_single.tv_sec);
-    printf("Single threaded: Time %d, nsec %ld\n", n_threads, stime, ntime);
+    //printf("Single threaded: Time %d, nsec %ld\n", n_threads, stime, ntime);
 
 	//print omp time
     ntime = finish_omp.tv_nsec - start_omp.tv_nsec;
     stime = (int)(finish_omp.tv_sec - start_omp.tv_sec);
-    printf("Multi threaded: Created %d threads. Time %d, nsec %ld\n", n_threads, stime, ntime);
+    //printf("Multi threaded: Created %d threads. Time %d, nsec %ld\n", n_threads, stime, ntime);
 
     /** Free matrixes **/
     for (int i = 0; i < n; i++)
