@@ -9,10 +9,13 @@
 
 #include <omp.h>
 #include <stdio.h>
+#include <stdint.h> /* for uint64 definition */
 #include <stdlib.h>
 #include <limits.h>
 #include <time.h>
 
+#define BILLION 1000000000L
+#define MILLION 1000000L
 void single_thread_sort_column(int m, int n, int *mat[n]);
 void single_thread_sort_block(int m, int n, int *mat[n]);
 
@@ -119,7 +122,8 @@ int main(int argc, char *argv[])
         return -1;
     }
     struct timespec start_single, start_omp, finish_single, finish_omp;
-    int rc, ntime, stime;
+    int rc, stime;
+    unsigned long ntime;
     int m, n, n_threads;
     n = atoi(argv[1]); //read from command line
     m = atoi(argv[2]); //read from command line
@@ -143,26 +147,28 @@ int main(int argc, char *argv[])
         }
     }
 
-    clock_gettime(CLOCK_REALTIME, &start_single);
-    single_thread_sort_column(m, n, A);
-    clock_gettime(CLOCK_REALTIME, &finish_single);
-    clock_gettime(CLOCK_REALTIME, &start_omp);
+    //clock_gettime(CLOCK_REALTIME, &start_single);
+    //single_thread_sort_column(m, n, A);
+    //clock_gettime(CLOCK_REALTIME, &finish_single);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID,  &start_omp);
     openmp_sort_colum(n_threads, m,n,B);
-    clock_gettime(CLOCK_REALTIME, &finish_omp);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &finish_omp);
     //Check if they are the same
-    compare(A,B,m,n);
+    //compare(A,B,m,n);
 
 
-    
+     uint64_t diff; 
+	diff = (BILLION * (finish_omp.tv_sec - start_omp.tv_sec) + finish_omp.tv_nsec - start_omp.tv_nsec)/MILLION;
+	printf("%llu\n", (long long unsigned int) diff);
     //print single threaded time
-    ntime = finish_single.tv_nsec - start_single.tv_nsec;
-    stime = (int)(finish_single.tv_sec - start_single.tv_sec);
-    //printf("Single threaded: Time %d, nsec %ld\n", n_threads, stime, ntime);
+    //ntime = finish_single.tv_nsec - start_single.tv_nsec;
+    //stime = (int)(finish_single.tv_sec - start_single.tv_sec);
+    //printf("Single threaded:%d\n", stime);
 
 	//print omp time
-    ntime = finish_omp.tv_nsec - start_omp.tv_nsec;
-    stime = (int)(finish_omp.tv_sec - start_omp.tv_sec);
-    //printf("Multi threaded: Created %d threads. Time %d, nsec %ld\n", n_threads, stime, ntime);
+    //ntime = (finish_omp.tv_nsec - start_omp.tv_nsec)/1000000; //ms
+    //stime = (int)(finish_omp.tv_sec - start_omp.tv_sec);
+    //printf("Multi threaded: %lu  %d\n", ntime, stime);
 
     /** Free matrixes **/
     for (int i = 0; i < n; i++)
