@@ -71,7 +71,7 @@ void single_thread_sort_column(int m, int n, int *mat[n]){
 
 }
 
-void openmp_sort_colum_v2(int n_threads, int m, int n, int *mat[n]){
+void openmp_sort_colum(int n_threads, int m, int n, int *mat[n]){
 
     int maxRow = n<=m ? n : m;
     int argmax_all, max_total = -1;
@@ -112,78 +112,8 @@ void openmp_sort_colum_v2(int n_threads, int m, int n, int *mat[n]){
 		}
 	}
 	double time = omp_get_wtime() - start_time;
-	printf("%f\n", time*1000);
+	//printf("%f\n", time*1000);
 }
-
-void openmp_sort_colum_v1(int n_threads, int m, int n, int *mat[n]){
-
-    int maxRow = n<=m ? n : m;
-    int argmax_all, max_total = -1;
-    //uint64_t diff;
-    #pragma omp parallel shared(argmax_all, max_total) num_threads(n_threads)
-    {
-		for(int i=0; i<maxRow; i++){
-			#pragma omp single nowait
-			{
-				argmax_all = i, max_total = mat[i][i];
-			}
-			int argmax_local = i, max_local = -1;
-			#pragma omp for schedule(static) nowait
-			for(int j=i+1;j<n; j++){
-				if(max_local < mat[j][i]){
-					max_local = mat[j][i];
-					argmax_local = j;
-				}
-			}
-			#pragma omp critical
-			{
-				if(max_total < max_local){
-					max_total = max_local;
-					argmax_all = argmax_local;
-				}
-			}
-
-			if(i!= argmax_all) {
-				#pragma omp for schedule(static) nowait
-				for(int l=0; l<m; l++){
-					int temp = mat[i][l];
-					mat[i][l] = mat[argmax_all][l];
-					mat[argmax_all][l] = temp;
-				}
-			}
-		}
-	}
-}
-
-
-
-void openmp_sort_colum_v0(int n_threads, int m, int n, int *mat[n]){
-    int maxRow = n<=m ? n : m;
-    for(int i=0; i<maxRow; i++){
-        int argmax_all = i, max_total = mat[i][i];
-
-        #pragma omp parallel shared(argmax_all, max_total) num_threads(n_threads)
-        {
-			int argmax_local = i, max_local = -1;
-            #pragma omp for schedule(static,1) nowait
-            for(int j=i+1;j<n; j++){
-                if(max_local < mat[j][i]){
-                    max_local = mat[j][i];
-                    argmax_local = j;
-                }
-            }
-            #pragma omp critical
-            if(max_total < max_local){
-				max_total = max_local;
-				argmax_all = argmax_local;
-			}
-        }
-        //Just swap if the max row is not the current one
-        if(i!= argmax_all) swap_rows_open_mp(n_threads, argmax_all, i, m, n, mat); 
-     }
-}
-
-
 
 void compare(int *A[], int *B[], int m, int n){
     for(int i=0; i<m; i++){
@@ -231,17 +161,17 @@ int main(int argc, char *argv[])
     }
 
     //double start_time = omp_get_wtime();
-    single_thread_sort_column(m, n, A);
+    //single_thread_sort_column(m, n, A);
 	//double time = omp_get_wtime() - start_time;
 	//printf("%f\n", time*1000);
     //clock_gettime(CLOCK_MONOTONIC,  &start_omp);
-    openmp_sort_colum_v2(n_threads, m,n,B);
+    openmp_sort_colum(n_threads, m,n,B);
     //clock_gettime(CLOCK_MONOTONIC, &finish_omp);
     //Check if they are the same
-    compare(A,B,m,n);
+    //compare(A,B,m,n);
 
 
-     uint64_t diff; 
+     //uint64_t diff; 
 	//diff = (BILLION * (finish_omp.tv_sec - start_omp.tv_sec) + finish_omp.tv_nsec - start_omp.tv_nsec)/MILLION;
 	//printf("%llu\n", (long long unsigned int) diff);
     //print single threaded time

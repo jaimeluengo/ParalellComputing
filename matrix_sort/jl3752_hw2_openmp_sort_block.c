@@ -139,7 +139,7 @@ void omp_sort_block(int n_threads, int m, int n, int *mat[n]){
 		}
 	}
     double time = omp_get_wtime() - start_time;
-	printf("%f\n", time*1000);
+	//printf("%f\n", time*1000);
 }
 
 
