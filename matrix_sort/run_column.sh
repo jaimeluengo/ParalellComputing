@@ -1,6 +1,6 @@
 #!/bin/bash
 rm sort_colum
-gcc -std=gnu99 -o sort_colum -fopenmp jl3752_openmp_sort_column.c -O3
+gcc -std=gnu99 -o sort_colum -fopenmp jl3752_hw2_openmp_sort_column.c -O3
 
 #for((i=1;i<=1;i+=1));do
 #    ./sort_colum 20000 20000 8

@@ -1,5 +1,5 @@
 /** compile with the following command:
- * gcc -std=gnu99 -o sort_colum -fopenmp jl3752_openmp_sort_column.c -O3
+ * gcc -std=gnu99 -o sort_colum -fopenmp jl3752_hw2_openmp_sort_column.c -O3
  * Run with following command:
  * ./sort_colum   <rows> <columns> <number of threads>
  * Example:
