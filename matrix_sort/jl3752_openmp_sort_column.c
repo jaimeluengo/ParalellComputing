@@ -230,15 +230,15 @@ int main(int argc, char *argv[])
         }
     }
 
-    double start_time = omp_get_wtime();
+    //double start_time = omp_get_wtime();
     single_thread_sort_column(m, n, A);
-	double time = omp_get_wtime() - start_time;
-	printf("%f\n", time*1000);
+	//double time = omp_get_wtime() - start_time;
+	//printf("%f\n", time*1000);
     //clock_gettime(CLOCK_MONOTONIC,  &start_omp);
-    //openmp_sort_colum_v2(n_threads, m,n,B);
+    openmp_sort_colum_v2(n_threads, m,n,B);
     //clock_gettime(CLOCK_MONOTONIC, &finish_omp);
     //Check if they are the same
-    //compare(A,B,m,n);
+    compare(A,B,m,n);
 
 
      uint64_t diff; 
