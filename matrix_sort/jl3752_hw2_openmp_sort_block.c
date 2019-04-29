@@ -1,4 +1,4 @@
-/** compile with the following command:
+/* * compile with the following command:
  * gcc -std=gnu99 -o sort_block -fopenmp jl3752_hw2_openmp_sort_block.c -O3
  * Run with following command:
  * ./sort_block <rows> <columns> <number of threads>
